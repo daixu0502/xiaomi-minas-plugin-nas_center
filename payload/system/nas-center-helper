@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+import json, os, re, subprocess, sys, time
+from pathlib import Path
+
+MAX_REQUEST=65536
+SERVICES={
+ "docker":{"label":"Docker","units":["docker.service"]},
+ "samba":{"label":"文件共享","units":["smb.service","nmb.service"]},
+ "crond":{"label":"定时任务","units":["crond.service"]},
+ "mihomo":{"label":"Mihomo","plugin":"mihomo"},
+ "quickshare":{"label":"文件快传","plugin":"quickshare"}
+}
+
+def output(data): print(json.dumps(data,ensure_ascii=False,separators=(",",":"))); raise SystemExit
+def fail(message): output({"ok":False,"error":message})
+def run(args,timeout=12): return subprocess.run(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=timeout,check=False)
+def meminfo():
+ data={}
+ for line in Path('/proc/meminfo').read_text().splitlines():
+  key,value=line.split(':',1); data[key]=int(value.strip().split()[0])*1024
+ return data
+def cpu_snapshot():
+ values=list(map(int,Path('/proc/stat').read_text().splitlines()[0].split()[1:]));return sum(values),values[3]+(values[4] if len(values)>4 else 0)
+def cpu_usage():
+ t1,i1=cpu_snapshot();time.sleep(.16);t2,i2=cpu_snapshot();return round(100*(1-(i2-i1)/max(1,t2-t1)),1)
+def cpu_temp():
+ values=[]
+ for path in Path('/sys/class/thermal').glob('thermal_zone*/temp'):
+  try:
+   value=float(path.read_text().strip());values.append(value/1000 if value>1000 else value)
+  except Exception: pass
+ return round(max(values),1) if values else None
+def default_interface():
+ try:
+  for line in Path('/proc/net/route').read_text().splitlines()[1:]:
+   parts=line.split()
+   if len(parts)>3 and parts[1]=='00000000' and int(parts[3],16)&2:return parts[0]
+ except Exception: pass
+ return ''
+def network():
+ rows=[]
+ for line in Path('/proc/net/dev').read_text().splitlines()[2:]:
+  name,values=line.split(':',1);name=name.strip();cols=values.split()
+  if name=='lo' or name.startswith(('docker','veth','br-','sit')):continue
+  rows.append({'name':name,'rx':int(cols[0]),'tx':int(cols[8]),'errors':int(cols[2])+int(cols[10]),'drops':int(cols[3])+int(cols[11])})
+ preferred=default_interface()
+ chosen=next((row for row in rows if row['name']==preferred),None) or (max(rows,key=lambda row:row['rx']+row['tx']) if rows else {'name':'—','rx':0,'tx':0,'errors':0,'drops':0})
+ chosen['timestamp']=time.time();return chosen
+def disk_usage():
+ result=[];seen=set()
+ for mount,label in [('/nas/pool0','用户存储池'),('/data','系统数据'),('/data/docker_data','Docker 分区'),('/log','系统日志'),('/firmware','固件分区')]:
+  if not Path(mount).exists():continue
+  proc=run(['df','-P','-B1',mount])
+  lines=proc.stdout.splitlines()
+  if len(lines)<2:continue
+  parts=lines[-1].split()
+  if len(parts)<6:continue
+  device=parts[0]
+  key=(device,mount if device.startswith('overlay') or mount=='/data/docker_data' else '')
+  if key in seen:continue
+  seen.add(key);result.append({'label':label,'mount':mount,'device':device,'total':int(parts[1]),'used':int(parts[2]),'available':int(parts[3]),'percent':int(parts[4].rstrip('%'))})
+ return result
+def plugin_status(user,name):
+ control=Path('/home')/user/'plugin'/name/'scripts/control'
+ if not control.is_file():return 'missing'
+ env=os.environ.copy();env.update({'PLUG_USER':user,'PLUG_HOME_DIR':str(control.parent.parent),'PLUG_SRC_DIR':str((control.parent.parent/'src').resolve())})
+ proc=subprocess.run([str(control),'status'],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=8,check=False)
+ return 'active' if proc.returncode==0 else 'inactive'
+def service_list(user):
+ result=[]
+ for key,item in SERVICES.items():
+  if 'plugin' in item:state=plugin_status(user,item['plugin'])
+  else:
+   states=[run(['systemctl','is-active',unit],5).stdout.strip() for unit in item['units']]
+   state='active' if states and all(value=='active' for value in states) else 'inactive'
+  result.append({'id':key,'name':item['label'],'state':state})
+ return result
+def dir_size(path):
+ proc=run(['du','-sk',path],20)
+ try:return int(proc.stdout.split()[0])*1024
+ except Exception:return 0
+def cache_info():
+ mem=meminfo();return {'pageCache':mem.get('Cached',0)+mem.get('Buffers',0),'logSize':dir_size('/log')}
+def overview(user):
+ mem=meminfo();total=mem.get('MemTotal',0);available=mem.get('MemAvailable',mem.get('MemFree',0))
+ return {'ok':True,'cpu':{'usage':cpu_usage(),'load':[float(v) for v in Path('/proc/loadavg').read_text().split()[:3]],'temperature':cpu_temp()},'memory':{'total':total,'used':max(0,total-available),'available':available,'percent':round(100*(total-available)/max(1,total),1)},'uptime':float(Path('/proc/uptime').read_text().split()[0]),'network':network(),'filesystems':disk_usage(),'services':service_list(user),'cache':cache_info()}
+def smart_disks():
+ block=run(['lsblk','-J','-b','-o','NAME,PATH,TYPE,SIZE,MODEL,SERIAL'],10)
+ try:devices=json.loads(block.stdout).get('blockdevices',[])
+ except Exception:devices=[]
+ result=[]
+ for device in devices:
+  path=str(device.get('path') or '')
+  if device.get('type')!='disk' or not re.fullmatch(r'/dev/(sd[a-z]+|nvme[0-9]+n[0-9]+)',path):continue
+  proc=run(['smartctl','-a','-j',path],25)
+  try:data=json.loads(proc.stdout)
+  except Exception:data={}
+  attrs={}
+  attributes=[]
+  for row in ((data.get('ata_smart_attributes') or {}).get('table') or []):
+   if row.get('id') in (5,187,197,198):attrs[str(row['id'])]=int((row.get('raw') or {}).get('value',0))
+   attributes.append({'id':row.get('id'),'name':row.get('name') or 'Unknown','value':row.get('value'),'worst':row.get('worst'),'threshold':row.get('thresh'),'raw':str((row.get('raw') or {}).get('string',(row.get('raw') or {}).get('value','—'))),'whenFailed':row.get('when_failed') or '','prefailure':bool((row.get('flags') or {}).get('prefailure'))})
+  nvme=data.get('nvme_smart_health_information_log') or {}
+  passed=(data.get('smart_status') or {}).get('passed')
+  bad=sum(attrs.values())+int(nvme.get('media_errors',0) or 0)
+  self_log=((data.get('ata_smart_self_test_log') or {}).get('standard') or {})
+  tests=[]
+  for test in (self_log.get('table') or [])[:10]:tests.append({'number':test.get('num'),'type':test.get('type') or {},'status':test.get('status') or {},'lifetimeHours':test.get('lifetime_hours'),'lba':test.get('lba_of_first_error')})
+  result.append({'path':path,'name':device.get('name'),'model':data.get('model_name') or device.get('model') or '未知硬盘','serial':data.get('serial_number') or device.get('serial') or '', 'firmware':data.get('firmware_version') or '—','formFactor':(data.get('form_factor') or {}).get('name') or '—','sataVersion':(data.get('sata_version') or {}).get('string') or '—','interfaceSpeed':((data.get('interface_speed') or {}).get('current') or {}).get('string') or '—','logicalBlockSize':data.get('logical_block_size'),'physicalBlockSize':data.get('physical_block_size'),'size':int((data.get('user_capacity') or {}).get('bytes') or device.get('size') or 0),'passed':passed,'smartAvailable':bool((data.get('smart_support') or {}).get('available',True)),'smartEnabled':bool((data.get('smart_support') or {}).get('enabled',True)),'temperature':(data.get('temperature') or {}).get('current'),'hours':(data.get('power_on_time') or {}).get('hours'),'powerCycles':data.get('power_cycle_count'),'rotation':data.get('rotation_rate'),'reallocated':attrs.get('5',0),'reportedUncorrectable':attrs.get('187',0),'pending':attrs.get('197',0),'offlineUncorrectable':attrs.get('198',0),'mediaErrors':int(nvme.get('media_errors',0) or 0),'errorLogCount':int(((data.get('ata_smart_error_log') or {}).get('summary') or {}).get('count',0) or 0),'selfTestCount':int(self_log.get('count',0) or 0),'attributes':attributes,'selfTests':tests,'nvmeHealth':nvme,'badTotal':bad,'status':'healthy' if passed is True and bad==0 else ('warning' if passed is not False else 'failed')})
+ return {'ok':True,'disks':result,'checkedAt':int(time.time())}
+def restart_service(user,key):
+ item=SERVICES.get(key)
+ if not item:fail('不允许重启此服务')
+ if 'plugin' in item:
+  home=Path('/home')/user/'plugin'/item['plugin'];control=home/'scripts/control'
+  if not control.is_file():fail(item['label']+' 未安装')
+  env=os.environ.copy();env.update({'PLUG_USER':user,'PLUG_HOME_DIR':str(home),'PLUG_SRC_DIR':str((home/'src').resolve())})
+  proc=subprocess.run([str(control),'restart'],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=45,check=False)
+ else:proc=run(['systemctl','restart',*item['units']],45)
+ if proc.returncode:fail(item['label']+' 重启失败')
+ return {'ok':True,'service':key,'state':'active'}
+def drop_caches():
+ before=meminfo().get('MemAvailable',0);run(['sync'],30)
+ Path('/proc/sys/vm/drop_caches').write_text('3\n');time.sleep(.5);after=meminfo().get('MemAvailable',0)
+ return {'ok':True,'released':max(0,after-before),'available':after}
+def clean_logs():
+ before=dir_size('/log');proc=run(['journalctl','--vacuum-time=7d','--vacuum-size=32M'],60)
+ if proc.returncode not in (0,):fail('系统日志整理失败')
+ after=dir_size('/log');return {'ok':True,'released':max(0,before-after),'remaining':after}
+
+raw=sys.stdin.buffer.read(MAX_REQUEST+1)
+if len(raw)>MAX_REQUEST:fail('请求过大')
+try:req=json.loads(raw or b'{}')
+except Exception:fail('请求不是有效 JSON')
+user=str(req.get('pluginUser',''));caller=os.environ.get('SUDO_USER','')
+if not re.fullmatch(r'u[0-9]+',user) or caller not in (user,'root') or not Path('/home',user,'plugin','nascenter').is_dir():fail('调用用户无效')
+action=req.get('action')
+try:
+ if action=='overview':output(overview(user))
+ if action=='smart':output(smart_disks())
+ if action=='service_restart':output(restart_service(user,str(req.get('service',''))))
+ if action=='drop_caches':output(drop_caches())
+ if action=='clean_logs':output(clean_logs())
+ fail('未知操作')
+except subprocess.TimeoutExpired:fail('操作超时')
+except Exception as exc:fail('操作失败：'+str(exc))

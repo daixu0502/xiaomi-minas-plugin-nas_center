@@ -1,0 +1,4 @@
+#!/bin/sh
+set -u
+u=${PLUG_USER:-$(id -un)};home=${PLUG_HOME_DIR:-/home/$u/plugin/nascenter};src=${PLUG_SRC_DIR:-$(readlink "$home/src" 2>/dev/null||true)}
+case "${1:-}" in enable|start|postinstall|postupgrade|restart)[ -x "$src/files/register.sh" ]&&"$src/files/register.sh" running true "$u"||true;;disable|stop|preuninstall|preupgrade)[ -x "$src/files/register.sh" ]&&"$src/files/register.sh" stopped false "$u"||true;;status)[ -x /data/plugin/.nascenter-system/nas-center-helper ];;*)exit 0;;esac

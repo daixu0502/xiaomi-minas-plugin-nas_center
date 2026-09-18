@@ -20,3 +20,5 @@
 .smart-table .failed{color:var(--red);font-weight:800}
 .empty-detail{padding:12px;color:var(--muted);font-size:12px;text-align:center}
 @media(max-width:620px){.detail-grid{grid-template-columns:1fr 1fr}}
+html.desktop-client,html.desktop-client body{width:100%;height:100%;min-height:100%;overflow:hidden}
+html.desktop-client .shell{height:100%;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}

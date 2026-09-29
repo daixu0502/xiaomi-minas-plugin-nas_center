@@ -4,7 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_NAME='nascenter'
 PLUGIN_LABEL='控制中心'
-PLUGIN_VERSION='1.1.17'
+PLUGIN_VERSION='1.1.20'
 UNINSTALL_NOTE='保留被管理的系统服务及用户文件。'
 
 # Shared frontend; keep this section consistent across the four manage.sh files.

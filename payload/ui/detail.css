@@ -70,8 +70,14 @@ html.desktop-client .desktop-frame {
   contain: layout paint;
   isolation: isolate;
   color: var(--text);
-  background: linear-gradient(180deg,#21164f 0,#3d2a8a 175px,var(--bg) 350px);
+  background: linear-gradient(180deg,#21164f 0,#3d2a8a 175px,#fff 350px);
 }
+/* Desktop canvas stays white regardless of the operating system theme. */
+/* Keep the body gradient on the body when scroll locking makes it fixed. */
+html:not(.desktop-client) { background-color: var(--bg); }
+html.desktop-client { color-scheme: light; }
+html.desktop-client body { background: #fff; }
+html.desktop-client .shell > footer { color: #626c78; }
 html.desktop-client .desktop-frame > .shell {
   position: relative;
   inset: auto;
@@ -95,7 +101,7 @@ html.desktop-client .desktop-frame > .shell > * { width: min(100%, 1120px); max-
 /* Disabled is a state, independent of the button's normal accent colour. */
 :root { --disabled-bg: #e8ebef; --disabled-text: #626c78; --disabled-border: #cbd1d8; }
 @media (prefers-color-scheme: dark) {
-  :root { --disabled-bg: #303740; --disabled-text: #aab2bd; --disabled-border: #48515e; }
+  :root:not(.desktop-client) { --disabled-bg: #303740; --disabled-text: #aab2bd; --disabled-border: #48515e; }
 }
 html body button:disabled {
   color: var(--disabled-text) !important;
@@ -167,4 +173,8 @@ html:not(.desktop-client) .section-toolbar h2 { display: none; }
 footer { color: var(--muted); }
 
 html.desktop-client .desktop-frame > .shell > .hero { margin-bottom: 18px; }
+#confirmDialog h2 { overflow-wrap: anywhere; }
+#confirmDialog p { font-size: 14px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+#confirmDialog .dialog-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+#confirmDialog button { min-width: 0; min-height: 44px; white-space: normal; overflow-wrap: anywhere; }
 

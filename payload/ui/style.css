@@ -21,9 +21,8 @@
   0% { opacity: 0.4; transform: translateY(4px); }
 }
 [data-minas-plugin="nascenter"] .panel{border: 1px solid rgba(255, 255, 255, 0.82); background: var(--surface); box-shadow: var(--shadow);}
-[data-minas-plugin="nascenter"] .metric span, [data-minas-plugin="nascenter"] .network-grid span{display: block; color: var(--muted); font-size: 11px;}
-[data-minas-plugin="nascenter"] .metric strong{display: block; margin: 7px 0px 4px; font-size: 23px;}
-[data-minas-plugin="nascenter"] .metric small, [data-minas-plugin="nascenter"] .network-grid small{display: block; color: var(--muted); font-size: 10px;}
+[data-minas-plugin="nascenter"] .network-grid span{display: block; color: var(--muted); font-size: 11px;}
+[data-minas-plugin="nascenter"] .network-grid small{display: block; color: var(--muted); font-size: 10px;}
 [data-minas-plugin="nascenter"] .panel{margin-bottom: 12px; padding: 18px; border-radius: 20px;}
 [data-minas-plugin="nascenter"] .panel-heading, [data-minas-plugin="nascenter"] .section-heading{display: flex; align-items: center; justify-content: space-between; gap: 12px;}
 [data-minas-plugin="nascenter"] .panel-heading{margin-bottom: 14px;}
@@ -76,7 +75,6 @@
 [data-minas-plugin="nascenter"] .toast.error{background: rgb(140, 52, 59);}
 [data-minas-plugin="nascenter"] .minas-plugin-body.modal-open{overflow: hidden;}
 @media (max-width: 620px){
-[data-minas-plugin="nascenter"] .metric strong{font-size: 21px;}
 [data-minas-plugin="nascenter"] .tool-card{grid-template-columns: auto minmax(0px, 1fr);}
 [data-minas-plugin="nascenter"] .tool-card button{grid-column: 1 / -1; width: 100%;}
 [data-minas-plugin="nascenter"] .smart-grid{grid-template-columns: 1fr 1fr;}

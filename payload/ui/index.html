@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171a20" media="(prefers-color-scheme: dark)"><title>控制中心</title><link rel="stylesheet" href="style.css?v=1.1.22&amp;ui=compact-metrics-20260930"><link rel="stylesheet" href="detail.css?v=1.1.22&amp;ui=compact-metrics-20260930"><link rel="stylesheet" href="palette.css?v=1.1.22&amp;ui=compact-metrics-20260930"></head>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171a20" media="(prefers-color-scheme: dark)"><title>控制中心</title><link rel="stylesheet" href="style.css?v=1.1.24&amp;ui=compact-metrics-20260930"><link rel="stylesheet" href="detail.css?v=1.1.24&amp;ui=compact-metrics-20260930"><link rel="stylesheet" href="palette.css?v=1.1.24&amp;ui=compact-metrics-20260930"></head>
 <body><div data-minas-plugin="nascenter"><div class="minas-plugin-body"><main class="shell">
 <header class="topbar plugin-header"><div><div class="eyebrow">XIAOMI SMART STORAGE</div><h1>控制中心</h1></div><button id="refresh" class="icon-button refresh-control" type="button" aria-label="刷新"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M6.1 9a7 7 0 0 1 11.2-2.1L20 11M4 13l2.7 4.1A7 7 0 0 0 17.9 15"/></svg></button></header>
 <section class="plugin-status"><div class="status-main"><span id="healthBadge" class="status-pill"><i></i>正在读取</span><h2 class="status-title" id="heroTitle">设备状态</h2></div><p class="status-description" id="heroSub">正在汇总系统与硬盘状态…</p></section>
@@ -15,9 +15,15 @@
  <article class="panel tool-card"><div class="tool-icon logs">LOG</div><div><h3>整理系统日志</h3><p id="logInfo">只保留最近 7 天，并将日志控制在 32 MB 左右。</p></div><button id="cleanLogs" class="primary-button" type="button">释放空间</button></article>
  <article class="panel"><h3>安全边界</h3><p class="tool-help">不会清空回收站，不会删除照片、视频、下载文件、Docker 镜像或容器。服务重启与清理动作都需要二次确认。</p></article>
 </section>
-<footer id="version">插件版本 1.1.22</footer></main>
+<footer id="version">插件版本 1.1.24</footer></main>
+<div id="processBackdrop" class="backdrop" hidden></div>
+<section id="processDetail" class="detail-sheet process-sheet" role="dialog" aria-modal="true" aria-labelledby="processTitle" hidden>
+ <header class="detail-header"><div><span class="detail-eyebrow">实时资源详情</span><h2 id="processTitle">进程</h2></div><button id="closeProcess" class="close-button" type="button" aria-label="返回概览">×</button></header>
+ <div class="process-toolbar"><input id="processSearch" type="search" placeholder="搜索进程名或 PID" aria-label="搜索进程"><button id="refreshProcess" class="secondary-button" type="button">刷新</button></div>
+ <p id="processStatus" class="process-status" role="status"></p><div id="processBody" class="detail-body" tabindex="0"></div>
+</section>
 <div id="detailBackdrop" class="backdrop" hidden></div><section id="diskDetail" class="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle" hidden><div class="sheet-handle"></div><header class="detail-header"><div><span class="detail-eyebrow">SMART 详细信息</span><h2 id="detailTitle">硬盘</h2></div><button id="closeDetail" class="close-button" type="button">×</button></header><div id="detailBody" class="detail-body"></div></section>
-<div id="backdrop" class="backdrop" hidden></div><section id="confirmDialog" class="dialog" role="alertdialog" aria-modal="true" hidden><div class="dialog-icon">!</div><h2 id="confirmTitle">确认操作</h2><p id="confirmMessage"></p><div class="dialog-actions"><button id="cancelConfirm" class="secondary-button">取消</button><button id="acceptConfirm" class="danger-button">确认</button></div></section><div id="toast" class="toast" role="status" aria-live="polite"></div><script src="client-bridge.js?v=1.1.22&amp;ui=compact-metrics-20260930"></script><script src="app.js?v=1.1.22&amp;ui=compact-metrics-20260930"></script>
+<div id="backdrop" class="backdrop" hidden></div><section id="confirmDialog" class="dialog" role="alertdialog" aria-modal="true" hidden><div class="dialog-icon">!</div><h2 id="confirmTitle">确认操作</h2><p id="confirmMessage"></p><div class="dialog-actions"><button id="cancelConfirm" class="secondary-button">取消</button><button id="acceptConfirm" class="danger-button">确认</button></div></section><div id="toast" class="toast" role="status" aria-live="polite"></div><script src="client-bridge.js?v=1.1.24&amp;ui=compact-metrics-20260930"></script><script src="app.js?v=1.1.24&amp;ui=compact-metrics-20260930"></script>
 <script>
 (function () {
       var document = window.XiaomiPluginClient.document;
@@ -46,4 +52,4 @@
   sync();
 })();
 </script>
-</div></div></body></html>
+<script src="metrics.js?v=20261002"></script></div></div></body></html>

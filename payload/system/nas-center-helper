@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import json, os, re, subprocess, sys, time
 from pathlib import Path
+sys.dont_write_bytecode = True
+from process_metrics import process_details, network_details, physical_space, docker_directory_usage
 
 MAX_REQUEST=65536
 SERVICES={
@@ -48,7 +50,7 @@ def network():
  chosen['timestamp']=time.time();return chosen
 def disk_usage():
  result=[];seen=set()
- for mount,label in [('/nas/pool0','用户存储池'),('/data','系统数据'),('/data/docker_data','Docker 分区'),('/log','系统日志'),('/firmware','固件分区')]:
+ for mount,label in [('/nas/pool0','用户存储池'),('/data','系统数据文件系统'),('/data/docker_data','Docker 数据目录'),('/log','系统日志'),('/firmware','固件分区')]:
   if not Path(mount).exists():continue
   proc=run(['df','-P','-B1',mount])
   lines=proc.stdout.splitlines()
@@ -58,7 +60,16 @@ def disk_usage():
   device=parts[0]
   key=(device,mount if device.startswith('overlay') or mount=='/data/docker_data' else '')
   if key in seen:continue
-  seen.add(key);result.append({'label':label,'mount':mount,'device':device,'total':int(parts[1]),'used':int(parts[2]),'available':int(parts[3]),'percent':int(parts[4].rstrip('%'))})
+  seen.add(key)
+  item={'label':label,'mount':mount,'device':device,'total':int(parts[1]),'used':int(parts[2]),'available':int(parts[3]),'percent':int(parts[4].rstrip('%'))}
+  if mount in ('/data','/data/docker_data'):
+   item.update(physical_space(mount));item['kind']='filesystem';item['filesystemPercent']=item['percent']
+   item['spaceWarning']=item['percent']>=90 or item['ordinaryAvailable']==0
+   if mount=='/data/docker_data':
+    scan=docker_directory_usage();item['kind']='directory';item['directoryBytes']=scan.get('bytes');item['scannedAt']=scan.get('sampledAt');item['scanError']=scan.get('error','')
+    item['used']=scan.get('bytes');item['percent']=round(item['used']*100/max(1,item['total']),1) if item['used'] is not None else None
+    item['sharedWith']='/data' if os.stat(mount).st_dev==os.stat('/data').st_dev else ''
+  result.append(item)
  return result
 def plugin_status(user,name):
  control=Path('/home')/user/'plugin'/name/'scripts/control'
@@ -136,6 +147,22 @@ user=str(req.get('pluginUser',''));caller=os.environ.get('SUDO_USER','')
 if not re.fullmatch(r'u[0-9]+',user) or caller not in (user,'root') or not Path('/home',user,'plugin','nascenter').is_dir():fail('调用用户无效')
 action=req.get('action')
 try:
+ if action=='processes':
+  kind=req.get('kind','cpu')
+  if kind not in ('cpu','memory'):fail('无效进程视图')
+  output(process_details(kind))
+ if action=='process_network':output(network_details())
+ if action=='health_details':
+  data=overview(user);details=process_details('cpu');reasons=[]
+  if data['cpu']['usage']>=85:reasons.append('CPU 使用率达到 85%：当前 %.1f%%' % data['cpu']['usage'])
+  if data['cpu']['temperature'] is not None and data['cpu']['temperature']>=75:reasons.append('CPU 温度达到 75°C：当前 %.1f°C；温度不能仅凭进程占用确定原因' % data['cpu']['temperature'])
+  if data['memory']['percent']>=90:reasons.append('内存使用率达到 90%：当前 %.1f%%；需同时考虑缓存与内核内存' % data['memory']['percent'])
+  for disk in data['filesystems']:
+   if disk.get('sharedWith'):continue
+   percent=disk.get('filesystemPercent',disk['percent'])
+   if disk['mount']!='/firmware' and (percent>=90 or disk.get('spaceWarning')):
+    reasons.append(disk['label']+' 实际使用率 '+str(percent)+'%'+('；普通用户可用空间为 0，剩余包含受限/保留空间' if disk.get('ordinaryAvailable')==0 else '')+'；不能据此认定某个进程异常')
+  output({'ok':True,'reasons':reasons,'cpu':details['rows'][:10], 'memory':sorted(details['rows'],key=lambda r:-r['rss'])[:10], 'note':details['note'],'timestamp':time.time()})
  if action=='overview':output(overview(user))
  if action=='smart':output(smart_disks())
  if action=='service_restart':output(restart_service(user,str(req.get('service',''))))

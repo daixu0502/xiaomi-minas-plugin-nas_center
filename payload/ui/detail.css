@@ -1,4 +1,38 @@
 /* Plugin-specific components. Shared chrome/theme live in palette.css. */
+[data-minas-plugin="nascenter"] .space-detail{margin:8px 0;color:var(--text);font-size:13px;line-height:1.6;overflow-wrap:anywhere;}
+[data-minas-plugin="nascenter"] .space-note{margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.7;overflow-wrap:anywhere;}
+[data-minas-plugin="nascenter"] .process-entry{cursor:pointer;position:relative;}
+[data-minas-plugin="nascenter"] .process-entry:focus-visible{outline:2px solid var(--purple);outline-offset:-3px;}
+[data-minas-plugin="nascenter"] .process-entry .process-entry-hint{display:block;margin-top:5px;color:var(--purple-dark);font-size:12px;line-height:1.5;font-weight:500;}
+[data-minas-plugin="nascenter"] .detail-sheet.process-sheet{width:min(960px,calc(100% - 28px));height:min(820px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);}
+[data-minas-plugin="nascenter"] .process-sheet[hidden]{display:none;}
+[data-minas-plugin="nascenter"] #processBackdrop{touch-action:none;}
+[data-minas-plugin="nascenter"] .process-toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px 0;flex-shrink:0;}
+[data-minas-plugin="nascenter"] .process-toolbar input{flex:1;min-width:0;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:14px;}
+[data-minas-plugin="nascenter"] .process-toolbar input[hidden]{display:none;}
+[data-minas-plugin="nascenter"] .process-toolbar button{flex-shrink:0;min-height:40px;}
+[data-minas-plugin="nascenter"] #refreshProcess:disabled::before{content:'';display:inline-block;width:12px;height:12px;margin-right:6px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:nas-process-spin .8s linear infinite;}
+[data-minas-plugin="nascenter"] .process-status{margin:8px 16px;color:var(--muted);font-size:12px;flex-shrink:0;overflow-wrap:anywhere;}
+[data-minas-plugin="nascenter"] .process-row,[data-minas-plugin="nascenter"] .process-network{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:8px;min-width:0;}
+[data-minas-plugin="nascenter"] .process-row,[data-minas-plugin="nascenter"] .process-network summary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px;}
+[data-minas-plugin="nascenter"] .process-copy{flex:1;min-width:0;}
+[data-minas-plugin="nascenter"] .process-copy strong{display:block;font-size:14px;overflow-wrap:anywhere;color:var(--text);}
+[data-minas-plugin="nascenter"] .process-copy small,[data-minas-plugin="nascenter"] .process-value small{display:block;font-size:12px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere;}
+[data-minas-plugin="nascenter"] .process-value{flex:0 0 auto;max-width:42%;text-align:right;font-size:13px;white-space:pre-line;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+[data-minas-plugin="nascenter"] .process-value strong{font-size:16px;color:var(--text);}
+[data-minas-plugin="nascenter"] .process-note{margin:0 0 12px;font-size:12px;color:var(--muted);white-space:pre-line;line-height:1.7;}
+[data-minas-plugin="nascenter"] .process-heading{margin:18px 0 10px;font-size:16px;}
+[data-minas-plugin="nascenter"] .process-reasons{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);}
+[data-minas-plugin="nascenter"] .process-reasons p{margin:8px 0 0;line-height:1.7;color:var(--text);font-size:13px;}
+[data-minas-plugin="nascenter"] .process-network summary{cursor:pointer;list-style:none;}
+[data-minas-plugin="nascenter"] .process-network summary::before{content:'›';font-size:20px;flex-shrink:0;}
+[data-minas-plugin="nascenter"] .process-network[open] summary::before{transform:rotate(90deg);}
+[data-minas-plugin="nascenter"] .process-network summary::-webkit-details-marker{display:none;}
+[data-minas-plugin="nascenter"] .process-connection{display:grid;gap:5px;border-top:1px solid var(--line);padding:10px 14px;font-size:12px;overflow-wrap:anywhere;color:var(--muted);}
+[data-minas-plugin="nascenter"] .process-connection strong{color:var(--text);font-weight:500;}
+@keyframes nas-process-spin{to{transform:rotate(360deg);}}
+@media(max-width:620px){[data-minas-plugin="nascenter"] .process-row,[data-minas-plugin="nascenter"] .process-network summary{gap:8px;padding:10px;}[data-minas-plugin="nascenter"] .process-network summary{flex-wrap:wrap;}[data-minas-plugin="nascenter"] .process-network .process-value{max-width:100%;margin-left:auto;}}
+@media(prefers-reduced-motion:reduce){[data-minas-plugin="nascenter"] #refreshProcess:disabled::before{animation:none;}}
 [data-minas-plugin="nascenter"] .disk-detail-button{width: 100%; min-height: 40px; margin-top: 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--purple-dark); background: var(--purple-soft); font-size: 12px; font-weight: 800;}
 [data-minas-plugin="nascenter"] #detailBackdrop{touch-action: none;}
 [data-minas-plugin="nascenter"] .detail-sheet{position: fixed; right: 0px; bottom: 0px; left: 0px; z-index: 31; display: flex; width: min(100%, 760px); max-height: min(90dvh, 900px); margin: 0px auto; padding-right: env(safe-area-inset-right); padding-bottom: max(12px,env(safe-area-inset-bottom)); padding-left: env(safe-area-inset-left); overflow: hidden; flex-direction: column; border-radius: 24px 24px 0px 0px; background: var(--bg); box-shadow: rgba(0, 0, 0, 0.34) 0px -22px 75px;}

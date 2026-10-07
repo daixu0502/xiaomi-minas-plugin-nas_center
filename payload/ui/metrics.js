@@ -31,15 +31,19 @@
       reasons.appendChild(node('h3', '', data.reasons.length ? '本次触发原因' : '本次采样未达到告警阈值'));
       (data.reasons.length ? data.reasons : ['首页提示与当前采样可能因负载波动不同。以下为当前占用最高的进程，不代表它们一定异常。']).forEach(function (s) { reasons.appendChild(node('p', '', s)); });
       fragment.appendChild(reasons);
+      var rankings = node('div', 'health-rankings');
       ['cpu', 'memory'].forEach(function (kind) {
-        fragment.appendChild(node('h3', 'process-heading', kind === 'cpu' ? 'CPU 占用前 10' : '内存占用前 10'));
-        data[kind].forEach(function (r) { fragment.appendChild(processRow(r, kind)); });
+        var section = node('section', 'health-ranking');
+        section.appendChild(node('h3', 'process-heading', kind === 'cpu' ? 'CPU 占用前 10' : '内存占用前 10'));
+        data[kind].forEach(function (r) { section.appendChild(processRow(r, kind)); });
+        rankings.appendChild(section);
       });
+      fragment.appendChild(rankings);
       fragment.appendChild(node('p', 'process-note', data.note + ' 高负载只表示资源压力，可能是正常下载、备份或索引；未执行终止进程或清理操作。'));
     } else {
       var rows = data.rows.filter(function (r) { return !query || (r.name + ' ' + (r.pid || (r.pids || []).join(' ')) + ' ' + r.description).toLowerCase().indexOf(query) >= 0; });
-      fragment.appendChild(node('p', 'process-note', mode === 'network' ? data.warnings.join('\n') : data.note));
-      fragment.appendChild(node('p', 'process-note', '共 ' + rows.length + ' 项 · ' + (mode === 'network' ? '按已测 TCP 收发速度合计降序；展开查看目标' : '从高到低实时排序')));
+      id('processHelpText').textContent = mode === 'network' ? data.warnings.join('\n') : data.note;
+      fragment.appendChild(node('p', 'process-summary', '共 ' + rows.length + ' 项 · ' + (mode === 'network' ? '按已测 TCP 收发速度排序 · 展开查看目标' : '按占用从高到低实时排序')));
       rows.slice(0, limit).forEach(function (r) {
         if (mode !== 'network') { fragment.appendChild(processRow(r, mode)); return; }
         var details = node('details', 'process-network'); details.dataset.key = r.key; details.open = expanded.has(r.key);
@@ -67,13 +71,17 @@
     var token = generation, requestedMode = mode; busy = true; id('refreshProcess').disabled = true;
     id('refreshProcess').textContent = '采样中…';
     request(mode === 'network' ? 'process_network' : mode === 'health' ? 'health_details' : 'processes', {kind:mode})
-      .then(function (d) { if (token !== generation) return; data = d; draw(); id('processStatus').textContent = '更新于 ' + new Date(d.timestamp * 1000).toLocaleTimeString() + ' · 采样完成后 3 秒刷新'; })
+      .then(function (d) { if (token !== generation) return; data = d; draw(); id('processStatus').textContent = '更新于 ' + new Date(d.timestamp * 1000).toLocaleTimeString() + ' · 采样后 3 秒自动刷新'; })
       .catch(function (e) { if (token !== generation) return; id('processStatus').textContent = '读取失败：' + e.message + (data ? '（以下保留上次数据）' : ''); })
       .finally(function () { busy = false; id('refreshProcess').disabled = false; id('refreshProcess').textContent = '刷新'; if (mode && panel.isConnected) { clearTimeout(timer); timer = setTimeout(poll, token === generation ? 3000 : 0); } });
   }
   function open(kind) {
     focus = document.activeElement; generation++; mode = kind; data = null; limit = 50;
     id('processTitle').textContent = {cpu:'CPU 进程', memory:'内存进程', network:'进程网络', health:'负载与健康详情'}[kind];
+    panel.dataset.mode = kind;
+    id('processHelp').hidden = kind === 'health'; id('processHelp').open = false;
+    id('processHelpTitle').textContent = kind === 'network' ? '仅统计可测 TCP 速率 · 采样说明' : '统计口径与采样说明';
+    id('processHelpText').textContent = '正在读取采样说明…';
     id('processSearch').hidden = kind === 'health'; id('processSearch').value = '';
     id('processStatus').textContent = '正在采样，请稍候…'; body.textContent = ''; body.scrollTop = 0;
     panel.hidden = false; id('processBackdrop').hidden = false; id('closeProcess').focus(); clearTimeout(timer); poll();

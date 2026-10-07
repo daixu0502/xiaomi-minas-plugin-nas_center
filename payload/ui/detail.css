@@ -7,21 +7,30 @@
 [data-minas-plugin="nascenter"] .detail-sheet.process-sheet{width:min(960px,calc(100% - 28px));height:min(820px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);}
 [data-minas-plugin="nascenter"] .process-sheet[hidden]{display:none;}
 [data-minas-plugin="nascenter"] #processBackdrop{touch-action:none;}
-[data-minas-plugin="nascenter"] .process-toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px 0;flex-shrink:0;}
-[data-minas-plugin="nascenter"] .process-toolbar input{flex:1;min-width:0;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:14px;}
+[data-minas-plugin="nascenter"] .process-controls{display:grid;gap:10px;flex:0 0 auto;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface);max-height:45%;overflow:auto;overscroll-behavior:contain;}
+[data-minas-plugin="nascenter"] .process-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 12px;min-width:0;}
+[data-minas-plugin="nascenter"] .process-toolbar input{min-width:0;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:14px;}
 [data-minas-plugin="nascenter"] .process-toolbar input[hidden]{display:none;}
-[data-minas-plugin="nascenter"] .process-toolbar button{flex-shrink:0;min-height:40px;}
+[data-minas-plugin="nascenter"] .process-toolbar button{grid-column:2;grid-row:1;min-height:40px;}
 [data-minas-plugin="nascenter"] #refreshProcess:disabled::before{content:'';display:inline-block;width:12px;height:12px;margin-right:6px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:nas-process-spin .8s linear infinite;}
-[data-minas-plugin="nascenter"] .process-status{margin:8px 16px;color:var(--muted);font-size:12px;flex-shrink:0;overflow-wrap:anywhere;}
-[data-minas-plugin="nascenter"] .process-row,[data-minas-plugin="nascenter"] .process-network{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:8px;min-width:0;}
+[data-minas-plugin="nascenter"] .process-toolbar .process-status{grid-column:1 / -1;grid-row:2;margin:0;color:var(--muted);font-size:13px;line-height:1.6;overflow-wrap:anywhere;}
+[data-minas-plugin="nascenter"] .process-sheet[data-mode="health"] .process-status{grid-column:1;grid-row:1;}
+[data-minas-plugin="nascenter"] .process-help{min-width:0;color:var(--muted);font-size:13px;line-height:1.6;}
+[data-minas-plugin="nascenter"] .process-help summary{cursor:pointer;width:fit-content;max-width:100%;}
+[data-minas-plugin="nascenter"] .process-help p{margin:8px 0 0;font-size:13px;white-space:pre-line;}
+[data-minas-plugin="nascenter"] .process-sheet .detail-body{display:flex;flex-direction:column;gap:12px;}
+[data-minas-plugin="nascenter"] .process-sheet .process-summary{margin:0;font-size:13px;line-height:1.6;}
+[data-minas-plugin="nascenter"] .process-row,[data-minas-plugin="nascenter"] .process-network{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:0;min-width:0;flex:0 0 auto;}
 [data-minas-plugin="nascenter"] .process-row,[data-minas-plugin="nascenter"] .process-network summary{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px;}
 [data-minas-plugin="nascenter"] .process-copy{flex:1;min-width:0;}
 [data-minas-plugin="nascenter"] .process-copy strong{display:block;font-size:14px;overflow-wrap:anywhere;color:var(--text);}
 [data-minas-plugin="nascenter"] .process-copy small,[data-minas-plugin="nascenter"] .process-value small{display:block;font-size:12px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere;}
 [data-minas-plugin="nascenter"] .process-value{flex:0 0 auto;max-width:42%;text-align:right;font-size:13px;white-space:pre-line;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
 [data-minas-plugin="nascenter"] .process-value strong{font-size:16px;color:var(--text);}
-[data-minas-plugin="nascenter"] .process-note{margin:0 0 12px;font-size:12px;color:var(--muted);white-space:pre-line;line-height:1.7;}
-[data-minas-plugin="nascenter"] .process-heading{margin:18px 0 10px;font-size:16px;}
+[data-minas-plugin="nascenter"] .process-sheet .process-note{margin:0;font-size:13px;color:var(--muted);white-space:pre-line;line-height:1.7;}
+[data-minas-plugin="nascenter"] .health-rankings{display:grid;gap:18px;}
+[data-minas-plugin="nascenter"] .health-ranking{display:grid;align-content:start;gap:8px;min-width:0;}
+[data-minas-plugin="nascenter"] .process-heading{margin:0;font-size:16px;}
 [data-minas-plugin="nascenter"] .process-reasons{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);}
 [data-minas-plugin="nascenter"] .process-reasons p{margin:8px 0 0;line-height:1.7;color:var(--text);font-size:13px;}
 [data-minas-plugin="nascenter"] .process-network summary{cursor:pointer;list-style:none;}
@@ -35,12 +44,14 @@
 @media(prefers-reduced-motion:reduce){[data-minas-plugin="nascenter"] #refreshProcess:disabled::before{animation:none;}}
 [data-minas-plugin="nascenter"] .disk-detail-button{width: 100%; min-height: 40px; margin-top: 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--purple-dark); background: var(--purple-soft); font-size: 12px; font-weight: 800;}
 [data-minas-plugin="nascenter"] #detailBackdrop{touch-action: none;}
-[data-minas-plugin="nascenter"] .detail-sheet{position: fixed; right: 0px; bottom: 0px; left: 0px; z-index: 31; display: flex; width: min(100%, 760px); max-height: min(90dvh, 900px); margin: 0px auto; padding-right: env(safe-area-inset-right); padding-bottom: max(12px,env(safe-area-inset-bottom)); padding-left: env(safe-area-inset-left); overflow: hidden; flex-direction: column; border-radius: 24px 24px 0px 0px; background: var(--bg); box-shadow: rgba(0, 0, 0, 0.34) 0px -22px 75px;}
-[data-minas-plugin="nascenter"] .sheet-handle{width: 42px; height: 4px; flex: 0 0 4px; margin: 9px auto 4px; border-radius: 4px; background: var(--line);}
-[data-minas-plugin="nascenter"] .detail-header{display: flex; align-items: center; justify-content: space-between; padding: 12px 17px; border-bottom: 1px solid var(--line); background: var(--surface);}
+[data-minas-plugin="nascenter"] .detail-sheet{position:fixed;inset:50% auto auto 50%;z-index:31;display:flex;flex-direction:column;width:min(760px,calc(100vw - 28px));max-height:calc(100dvh - 28px);margin:0;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:var(--bg);box-shadow:0 24px 64px rgba(0,0,0,.28);transform:translate(-50%,-50%);animation:nas-dialog-in .16s cubic-bezier(.2,.7,.2,1) both;}
+[data-minas-plugin="nascenter"] .sheet-handle{display:none;}
+[data-minas-plugin="nascenter"] .detail-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:0 0 auto;padding:16px;border-bottom:1px solid var(--line);background:var(--surface);}
+[data-minas-plugin="nascenter"] .detail-header>div{min-width:0;}
+[data-minas-plugin="nascenter"] .detail-header h2{overflow-wrap:anywhere;font-size:22px;line-height:1.4;}
 [data-minas-plugin="nascenter"] .detail-eyebrow{display: block; margin-bottom: 3px; color: var(--purple); font-size: 10px; font-weight: 850; letter-spacing: 0.13em;}
-[data-minas-plugin="nascenter"] .close-button{display: grid; place-items: center; width: 37px; height: 37px; padding: 0px; border: 0px; border-radius: 50%; color: var(--muted); background: var(--bg); font-size: 23px;}
-[data-minas-plugin="nascenter"] .detail-body{padding: 14px; overflow: auto; overscroll-behavior: contain;}
+[data-minas-plugin="nascenter"] .close-button{display:grid;place-items:center;flex:0 0 37px;width:37px;height:37px;padding:0;border:0;border-radius:50%;color:var(--muted);background:var(--bg);font-size:23px;}
+[data-minas-plugin="nascenter"] .detail-body{min-height:0;flex:1 1 auto;padding:16px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
 [data-minas-plugin="nascenter"] .detail-section{margin-bottom: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface);}
 [data-minas-plugin="nascenter"] .detail-section h3{margin-bottom: 11px;}
 [data-minas-plugin="nascenter"] .detail-grid{display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--line);}
@@ -54,13 +65,7 @@
 [data-minas-plugin="nascenter"] .smart-table tr:last-child td{border-bottom: 0px;}
 [data-minas-plugin="nascenter"] .smart-table .failed{color: var(--red); font-weight: 800;}
 [data-minas-plugin="nascenter"] .empty-detail{padding: 12px; color: var(--muted); font-size: 12px; text-align: center;}
-@media (max-width: 620px){
-[data-minas-plugin="nascenter"] .detail-grid{grid-template-columns: 1fr 1fr;}
-}
 [data-minas-plugin="nascenter"] .backdrop{backdrop-filter: none; animation: 0.14s ease-out 0s 1 normal both running nas-overlay-in;}
-[data-minas-plugin="nascenter"] .detail-sheet{inset: 50% auto auto 50%; width: min(760px, -28px + 100vw); max-height: calc(100dvh - 28px); margin: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px; border: 1px solid var(--line); border-radius: 22px; box-shadow: rgba(0, 0, 0, 0.28) 0px 24px 64px; transform: translate(-50%, -50%); animation: 0.16s cubic-bezier(0.2, 0.7, 0.2, 1) 0s 1 normal both running nas-dialog-in;}
-[data-minas-plugin="nascenter"] .sheet-handle{display: none;}
-[data-minas-plugin="nascenter"] .detail-body{min-height: 0px; flex: 1 1 auto;}
 [data-minas-plugin="nascenter"] .dialog{width: min(380px, -28px + 100vw); max-height: calc(100dvh - 28px); animation: 0.16s cubic-bezier(0.2, 0.7, 0.2, 1) 0s 1 normal both running nas-dialog-in;}
 [data-minas-plugin="nascenter"].dialog-scroll-locked, [data-minas-plugin="nascenter"].dialog-scroll-locked .minas-plugin-body{overflow: hidden; overscroll-behavior: none;}
 [data-minas-plugin="nascenter"] .detail-sheet, [data-minas-plugin="nascenter"] .dialog{overscroll-behavior: contain;}
@@ -88,3 +93,22 @@
 [data-minas-plugin="nascenter"] #confirmDialog p{font-size: 14px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere;}
 [data-minas-plugin="nascenter"] #confirmDialog .dialog-actions{grid-template-columns: minmax(0px, 1fr) minmax(0px, 1fr);}
 [data-minas-plugin="nascenter"] #confirmDialog button{min-width: 0px; min-height: 44px; white-space: normal; overflow-wrap: anywhere;}
+/* Use the embedded window, not the host viewport. Avoid a resting transform
+   that can keep text on a scaled Chromium compositing layer. */
+[data-minas-plugin="nascenter"].desktop-client .desktop-frame>.detail-sheet{inset:0;width:min(1120px,calc(100% - 48px));height:min(820px,calc(100% - 48px));max-height:calc(100% - 48px);margin:auto;transform:none;animation:nas-overlay-in .14s ease-out;}
+[data-minas-plugin="nascenter"].desktop-client .detail-sheet .detail-header{padding:18px 24px;}
+[data-minas-plugin="nascenter"].desktop-client .detail-sheet .process-controls{padding:14px 24px;}
+[data-minas-plugin="nascenter"].desktop-client .detail-sheet .detail-body{padding:20px 24px;}
+[data-minas-plugin="nascenter"].desktop-client .health-rankings{grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),1fr));gap:20px;}
+[data-minas-plugin="nascenter"].desktop-client .process-copy strong{font-size:15px;}
+[data-minas-plugin="nascenter"].desktop-client .process-copy small,[data-minas-plugin="nascenter"].desktop-client .process-value small{font-size:13px;}
+[data-minas-plugin="nascenter"].desktop-client .process-value strong{font-size:18px;}
+[data-minas-plugin="nascenter"].desktop-client #detailBody{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));align-content:start;gap:16px;}
+[data-minas-plugin="nascenter"].desktop-client #detailBody>.detail-section{min-width:0;margin:0;padding:18px;}
+[data-minas-plugin="nascenter"].desktop-client #detailBody>.detail-section:nth-child(n+3){grid-column:1 / -1;}
+[data-minas-plugin="nascenter"].desktop-client .detail-item{padding:12px;}
+[data-minas-plugin="nascenter"].desktop-client .detail-item span{font-size:12px;}
+[data-minas-plugin="nascenter"].desktop-client .detail-item strong{font-size:14px;}
+[data-minas-plugin="nascenter"].desktop-client .smart-table{font-size:13px;}
+[data-minas-plugin="nascenter"].desktop-client .smart-table th,[data-minas-plugin="nascenter"].desktop-client .smart-table td{padding:11px 12px;}
+@media(prefers-reduced-motion:reduce){[data-minas-plugin="nascenter"].desktop-client .desktop-frame>.detail-sheet{animation:none;}}

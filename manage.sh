@@ -4,7 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_NAME='nascenter'
 PLUGIN_LABEL='控制中心'
-PLUGIN_VERSION='1.1.26'
+PLUGIN_VERSION='1.1.27'
 UNINSTALL_NOTE='保留被管理的系统服务及用户文件。'
 
 # Shared frontend; keep this section consistent across the four manage.sh files.
@@ -429,7 +429,7 @@ nas_uninstall() {
                 fi;;
             nascenter)
                 if ! ls /etc/sudoers.d/nascenter-u* >/dev/null 2>&1; then
-                    rm -f /data/plugin/.nascenter-system/nas-center-helper /data/plugin/.nascenter-system/process_metrics.py
+                    rm -f /data/plugin/.nascenter-system/nas-center-helper /data/plugin/.nascenter-system/process_metrics.py /data/plugin/.nascenter-system/user_state_io.py
                     rmdir /data/plugin/.nascenter-system 2>/dev/null || true
                 fi;;
         esac
@@ -472,19 +472,25 @@ name=$PLUGIN_NAME
 version=$PLUGIN_VERSION
 nas_require jq sha256sum plugincenter flock python3 sudo visudo smartctl lsblk systemctl runuser
 B=$(CDPATH= cd "$(dirname "$0")"&&pwd);P="$B/payload";root="/home/$u/plugin";home="$root/$name";scripts="$home/scripts";list="/data/plugin/$u.list";[ -f "$list" ]&&jq empty "$list">/dev/null||exit 1
+was_enabled=$(jq -c --arg p "$name" ' .[$p] as $e | if ($e.enable|type)=="boolean" then $e.enable else true end' "$list")
+was_status=$(jq -r --arg p "$name" '.[$p].status // "running"' "$list")
 oldsrc="";[ -L "$home/src" ]&&oldsrc=$(readlink "$home/src" 2>/dev/null||true);case "$oldsrc" in */"$u"/plugin/pluginsrc/"$name")pool=${oldsrc%/pluginsrc/$name};;*)pool="/nas/pool0/$u/plugin";;esac
 srcp="$pool/pluginsrc";tmpp="$pool/plugintmp";src="$srcp/$name";tmp="$tmpp/$name";webroot=$(jq -r '.settings.nginx_plugin//"/data/plugin/www"' /etc/config/plugin);web="$webroot/$u/$name";icon=/data/plugin/www/icon/nascenter.icon;helperdir=/data/plugin/.nascenter-system;helper="$helperdir/nas-center-helper";sudoers="/etc/sudoers.d/nascenter-$u";lock="/data/plugin/.$u.plugins.lock"
 mkdir -p "$home" "$scripts" "$srcp" "$tmpp" "$(dirname "$web")" "$(dirname "$icon")" "$helperdir" /etc/sudoers.d
+[ ! -L "$home/var" ] || nas_fail "插件状态目录不能为符号链接"
+mkdir -p "$home/var";chown "$u:$u" "$home/var";chmod 0700 "$home/var"
 stage="$srcp/.$name.new.$$";old="$srcp/.$name.old.$$";rm -rf "$stage";mkdir -p "$stage";cp -R "$P/files" "$stage/files";cp -R "$P/ui" "$stage/ui";chmod 0755 "$stage/files/"*.sh "$stage/ui/nascenter.cgi";chmod 0644 "$stage/ui/index.html" "$stage/ui/"*.js "$stage/ui/"*.css "$stage/ui/config";[ ! -d "$src" ]||mv "$src" "$old";mv "$stage" "$src";[ ! -d "$old" ]||rm -rf "$old"
 cp "$P/scripts/control" "$scripts/control";chmod 0755 "$scripts/control";rm -f "$home/src" "$home/tmp";ln -s "$src" "$home/src";mkdir -p "$tmp";ln -s "$tmp" "$home/tmp"
 digest="$tmp/d.$$";find "$src" -type f|LC_ALL=C sort|while IFS= read -r f;do sha256sum "$f"|cut -d' ' -f1;done>"$digest";abstract=$(sha256sum "$digest"|cut -d' ' -f1);rm -f "$digest";size=$(du -sk "$src"|awk '{print $1*1024}');now=$(date +%s)
 jq -n --arg v "$version" --arg a "$abstract" --argjson n "$now" --argjson z "$size" '{plugin:"nascenter",name:"控制中心",id:19093,version:$v,tags:["tool"],timestamp:$n,desc:"性能、硬盘健康、网络与服务管理",developer:"Local",publisher:"Local",changelog:"兼容固件通过文件描述符执行 CGI，修复插件空白页",system:false,size:$z,port:"",type:"standard",forceupgrade:false,ext:{admin:true},hotplug:[],abstract:$a}'>"$home/INFO"
 rm -f "$web";ln -s "$src/ui" "$web";python3 "$P/make_icon.py" "$icon";chmod 0644 "$icon"
-entry="$tmp/e.$$";jq -n --slurpfile f "$src/ui/config" --slurpfile i "$home/INFO" --argjson n "$now" '{resource:{mpk:"",icon:"",preview:null},status:"running",install:true,upgrade:false,enable:true,changetime:$n,icon:"/icon/nascenter.icon",progress:"100",frontend:$f[0],info:($i[0]|del(.abstract)),online:true}'>"$entry";exec 9>"$lock";flock -x 9;backup="$list.pre-nascenter.$now";cp -p "$list" "$backup";l="$list.nascenter.$$";jq --slurpfile e "$entry" '.nascenter=$e[0]' "$list">"$l";jq empty "$l";chmod --reference="$list" "$l" 2>/dev/null||chmod 0644 "$l";chown --reference="$list" "$l" 2>/dev/null||chown "$u:$u" "$l";mv -f "$l" "$list";flock -u 9;rm -f "$entry"
+entry="$tmp/e.$$";jq -n --slurpfile f "$src/ui/config" --slurpfile i "$home/INFO" --argjson n "$now" --argjson enabled "$was_enabled" --arg status "$was_status" '{resource:{mpk:"",icon:"",preview:null},status:$status,install:true,upgrade:false,enable:$enabled,changetime:$n,icon:"/icon/nascenter.icon",progress:"100",frontend:$f[0],info:($i[0]|del(.abstract)),online:true}'>"$entry";exec 9>"$lock";flock -x 9;backup="$list.pre-nascenter.$now";cp -p "$list" "$backup";l="$list.nascenter.$$";jq --slurpfile e "$entry" '.nascenter=$e[0]' "$list">"$l";jq empty "$l";chmod --reference="$list" "$l" 2>/dev/null||chmod 0644 "$l";chown --reference="$list" "$l" 2>/dev/null||chown "$u:$u" "$l";mv -f "$l" "$list";flock -u 9;rm -f "$entry"
+mt="$helperdir/user_state_io.py.new.$$";cp "$P/system/user_state_io.py" "$mt";chown root:root "$mt";chmod 0644 "$mt";mv -f "$mt" "$helperdir/user_state_io.py"
 mt="$helperdir/process_metrics.py.new.$$";cp "$P/system/process_metrics.py" "$mt";chown root:root "$mt";chmod 0644 "$mt";mv -f "$mt" "$helperdir/process_metrics.py"
+/usr/bin/python3 -B "$helperdir/process_metrics.py" --migrate-cache "$u"
 ht="$helper.new.$$";st="$sudoers.new.$$";cp "$P/system/nas-center-helper" "$ht";chown root:root "$helperdir" "$ht";chmod 0755 "$helperdir" "$ht";printf '%s ALL=(root) NOPASSWD: %s\n' "$u" "$helper">"$st";chown root:root "$st";chmod 0440 "$st";visudo -cf "$st">/dev/null||exit 1;mv -f "$ht" "$helper";mv -f "$st" "$sudoers"
 chown -R "$u:$u" "$home" "$src" "$tmp";chown -h "$u:$u" "$home/src" "$home/tmp" "$web";chmod 0700 "$home" "$src" "$tmp";chmod 0755 "$src/ui"
-printf '{"action":"overview","pluginUser":"%s"}' "$u"|runuser -u "$u" -- sudo -n "$helper"|jq -e '.ok==true'>/dev/null||{ echo '错误：控制中心自检失败'>&2;exit 1;};plugincenter -u "$u" -p "$name" enable>/dev/null 2>&1||true
+printf '{"action":"overview","pluginUser":"%s"}' "$u"|runuser -u "$u" -- sudo -n "$helper"|jq -e '.ok==true'>/dev/null||{ echo '错误：控制中心自检失败'>&2;exit 1;};if [ "$was_enabled" = true ];then plugincenter -u "$u" -p "$name" enable>/dev/null 2>&1||true;fi
 env PLUG_USER="$u" PLUG_NAME="$name" PLUG_HOME_DIR="$home" PLUG_SRC_DIR="$src" PLUG_TMP_DIR="$tmp" PLUG_STATUS=unverified /usr/bin/plugin.sh verify || nas_fail "系统完整性校验失败"
 rm -f "$backup"
 echo "控制中心 $version 已安装；完整性校验通过，安装暂存备份已清理。"

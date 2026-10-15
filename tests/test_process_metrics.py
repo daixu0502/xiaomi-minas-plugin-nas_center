@@ -19,11 +19,12 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(result['total'],result['used']+result['available'])
 
     def test_directory_cache_does_not_scan_every_poll(self):
-        with patch.object(m,'disk_cache_dir'),patch.object(m,'read_disk_cache',return_value={'checkedAt':100}),patch.object(m.time,'time',return_value=110),patch.object(m.subprocess,'Popen') as spawn:
+        m.configure_cache('u123')
+        with patch.object(m,'read_disk_cache',return_value={'checkedAt':100}),patch.object(m.time,'time',return_value=110),patch.object(m.subprocess,'Popen') as spawn:
             m.docker_directory_usage();spawn.assert_not_called()
-        with patch.object(m,'disk_cache_dir'),patch.object(m,'read_disk_cache',return_value={}),patch.object(m.subprocess,'Popen') as spawn:
+        with patch.object(m,'read_disk_cache',return_value={}),patch.object(m.subprocess,'Popen') as spawn:
             self.assertEqual(m.docker_directory_usage(),{})
-            self.assertEqual(spawn.call_args.args[0][-1],'--refresh-docker-usage')
+            self.assertEqual(spawn.call_args.args[0][-2:],['--refresh-docker-usage','u123'])
 
     def test_scopes(self):
         for host, expected in [('8.8.8.8', '广域网/公网'), ('192.168.1.1', '局域网/私网'),

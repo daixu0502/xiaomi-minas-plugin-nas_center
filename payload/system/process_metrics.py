@@ -6,10 +6,54 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import stat
 import sys
 import time
+from user_state_io import read_state, write_state, state_lock
 
-DISK_CACHE = Path('/run/nascenter-space')
+CACHE_USER = None
+CACHE_FILE = 'space-cache.json'
+LEGACY_CACHE = Path('/run/nascenter-space')
+
+
+def configure_cache(user):
+    global CACHE_USER
+    if not re.fullmatch(r'u[0-9]+',user or ''):raise ValueError('无效缓存用户')
+    CACHE_USER = user
+
+
+def migrate_cache(user):
+    """Installer-only migration. Live scans are excluded before old removal."""
+    if os.geteuid()!=0:raise PermissionError('仅 root 安装器可迁移旧缓存')
+    configure_cache(user)
+    if not LEGACY_CACHE.exists():return
+    metadata=LEGACY_CACHE.lstat()
+    if LEGACY_CACHE.is_symlink() or metadata.st_uid!=0 or metadata.st_mode&0o077:
+        raise ValueError('旧空间缓存目录权限异常')
+    if any(p.name not in ('docker.json','scan.lock') for p in LEGACY_CACHE.iterdir()):
+        raise ValueError('旧缓存目录含未知文件，未删除')
+    fd=os.open(LEGACY_CACHE/'scan.lock',os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):raise ValueError('旧空间缓存锁异常')
+        # Bound the wait; an active old scan is never terminated by migration.
+        deadline=time.monotonic()+25
+        while True:
+            try:fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB);break
+            except BlockingIOError:
+                if time.monotonic()>=deadline:raise RuntimeError('旧空间扫描未结束，请稍后更新')
+                time.sleep(.2)
+        old=LEGACY_CACHE/'docker.json'
+        if old.exists():
+            st=old.lstat()
+            if not stat.S_ISREG(st.st_mode) or st.st_uid!=0 or st.st_mode&0o022 or st.st_size>131072:
+                raise ValueError('旧空间缓存文件异常')
+            value=json.loads(old.read_bytes())
+            if not isinstance(value,dict):raise ValueError('旧空间缓存无效')
+            if read_state(user,'nascenter',CACHE_FILE) is None:write_state(user,'nascenter',CACHE_FILE,value)
+            old.unlink()
+        (LEGACY_CACHE/'scan.lock').unlink()
+        LEGACY_CACHE.rmdir()
+    finally:os.close(fd)
 
 
 def physical_space(path):
@@ -22,30 +66,28 @@ def physical_space(path):
             'restrictedFree': max(0, free - ordinary), 'percent': round(used * 100 / max(1, total), 1)}
 
 
-def disk_cache_dir():
-    DISK_CACHE.mkdir(mode=0o700, exist_ok=True)
-    s = DISK_CACHE.lstat()
-    if DISK_CACHE.is_symlink() or s.st_uid != 0 or s.st_mode & 0o077:
-        raise RuntimeError('空间缓存目录权限无效')
-
-
 def read_disk_cache():
     try:
-        data = json.loads((DISK_CACHE / 'docker.json').read_text())
-        if data.get('device') == os.stat('/data/docker_data').st_dev:
-            return data
-    except (OSError, ValueError):
+        data = read_state(CACHE_USER,'nascenter',CACHE_FILE)
+        if isinstance(data,dict) and data.get('device') == os.stat('/data/docker_data').st_dev:
+            # This cache is user-editable. Return only bounded display fields.
+            result={'device':data['device']}
+            for key in ('bytes','checkedAt','sampledAt'):
+                value=data.get(key)
+                if type(value) in (int,float) and 0<=value<1e20:result[key]=value
+            if data.get('error'):result['error']='目录扫描未完成或失败；有旧值时保留旧值'
+            return result
+    except (OSError, ValueError, subprocess.SubprocessError):
         pass
     return {}
 
 
 def docker_directory_usage():
     # Do not recursively scan Docker on the three-second UI polling path.
-    disk_cache_dir()
     data = read_disk_cache()
     age = time.time() - data.get('checkedAt', 0)
     if not 0 <= age < 60:
-        subprocess.Popen([sys.executable, '-B', str(Path(__file__).resolve()), '--refresh-docker-usage'],
+        subprocess.Popen([sys.executable, '-B', str(Path(__file__).resolve()), '--refresh-docker-usage', CACHE_USER],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True, close_fds=True)
     return data
@@ -54,12 +96,8 @@ def docker_directory_usage():
 def refresh_docker_usage():
     if os.geteuid() != 0:
         return
-    disk_cache_dir()
-    with (DISK_CACHE / 'scan.lock').open('a') as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            return
+    with state_lock(CACHE_USER,'nascenter','space-cache.lock') as locked:
+        if not locked:return
         data = read_disk_cache()
         if 0 <= time.time() - data.get('checkedAt', 0) < 60:
             return
@@ -75,12 +113,7 @@ def refresh_docker_usage():
             try: data.setdefault('device', os.stat('/data/docker_data').st_dev)
             except OSError: return
         data['checkedAt'] = time.time()
-        temp = DISK_CACHE / ('docker.json.' + str(os.getpid()))
-        try:
-            temp.write_text(json.dumps(data))
-            os.replace(temp, DISK_CACHE / 'docker.json')
-        finally:
-            temp.unlink(missing_ok=True)
+        write_state(CACHE_USER,'nascenter',CACHE_FILE,data)
 
 
 def describe(name, command='', kernel=False):
@@ -285,5 +318,8 @@ def network_details():
             'namespaces': len(spaces), 'warnings': list(dict.fromkeys(warnings + errors + more_errors))}
 
 
-if __name__ == '__main__' and sys.argv[1:] == ['--refresh-docker-usage']:
+if __name__ == '__main__' and len(sys.argv)==3 and sys.argv[1]=='--refresh-docker-usage':
+    configure_cache(sys.argv[2])
     refresh_docker_usage()
+elif __name__ == '__main__' and len(sys.argv)==3 and sys.argv[1]=='--migrate-cache':
+    migrate_cache(sys.argv[2])

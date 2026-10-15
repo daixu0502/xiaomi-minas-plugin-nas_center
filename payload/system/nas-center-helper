@@ -2,7 +2,7 @@
 import json, os, re, subprocess, sys, time
 from pathlib import Path
 sys.dont_write_bytecode = True
-from process_metrics import process_details, network_details, physical_space, docker_directory_usage
+from process_metrics import process_details, network_details, physical_space, docker_directory_usage, configure_cache
 
 MAX_REQUEST=65536
 SERVICES={
@@ -145,6 +145,7 @@ try:req=json.loads(raw or b'{}')
 except Exception:fail('请求不是有效 JSON')
 user=str(req.get('pluginUser',''));caller=os.environ.get('SUDO_USER','')
 if not re.fullmatch(r'u[0-9]+',user) or caller not in (user,'root') or not Path('/home',user,'plugin','nascenter').is_dir():fail('调用用户无效')
+configure_cache(user)
 action=req.get('action')
 try:
  if action=='processes':

@@ -3,6 +3,7 @@ import json, os, re, subprocess, sys, time
 from pathlib import Path
 sys.dont_write_bytecode = True
 from process_metrics import process_details, network_details, physical_space, docker_directory_usage, configure_cache
+from telemetry_cache import cached, invalidate
 
 MAX_REQUEST=65536
 SERVICES={
@@ -90,11 +91,12 @@ def dir_size(path):
  proc=run(['du','-sk',path],20)
  try:return int(proc.stdout.split()[0])*1024
  except Exception:return 0
-def cache_info():
- mem=meminfo();return {'pageCache':mem.get('Cached',0)+mem.get('Buffers',0),'logSize':dir_size('/log')}
-def overview(user):
+def cache_info(force=False):
+ mem=meminfo();return {'pageCache':mem.get('Cached',0)+mem.get('Buffers',0),'logSize':cached('nascenter-logs',60,lambda:dir_size('/log'),force)}
+def overview(user,force=False):
  mem=meminfo();total=mem.get('MemTotal',0);available=mem.get('MemAvailable',mem.get('MemFree',0))
- return {'ok':True,'cpu':{'usage':cpu_usage(),'load':[float(v) for v in Path('/proc/loadavg').read_text().split()[:3]],'temperature':cpu_temp()},'memory':{'total':total,'used':max(0,total-available),'available':available,'percent':round(100*(total-available)/max(1,total),1)},'uptime':float(Path('/proc/uptime').read_text().split()[0]),'network':network(),'filesystems':disk_usage(),'services':service_list(user),'cache':cache_info()}
+ mounts='-'.join(str(os.stat(p).st_dev) if Path(p).exists() else 'missing' for p in ('/nas/pool0','/data','/data/docker_data'))
+ return {'ok':True,'cpu':{'usage':cpu_usage(),'load':[float(v) for v in Path('/proc/loadavg').read_text().split()[:3]],'temperature':cpu_temp()},'memory':{'total':total,'used':max(0,total-available),'available':available,'percent':round(100*(total-available)/max(1,total),1)},'uptime':float(Path('/proc/uptime').read_text().split()[0]),'network':network(),'filesystems':cached('nascenter-'+user+'-disks-'+mounts,30,disk_usage,force),'services':cached('nascenter-'+user+'-services',20,lambda:service_list(user),force),'cache':cache_info(force)}
 def smart_disks():
  block=run(['lsblk','-J','-b','-o','NAME,PATH,TYPE,SIZE,MODEL,SERIAL'],10)
  try:devices=json.loads(block.stdout).get('blockdevices',[])
@@ -164,11 +166,13 @@ try:
    if disk['mount']!='/firmware' and (percent>=90 or disk.get('spaceWarning')):
     reasons.append(disk['label']+' 实际使用率 '+str(percent)+'%'+('；普通用户可用空间为 0，剩余包含受限/保留空间' if disk.get('ordinaryAvailable')==0 else '')+'；不能据此认定某个进程异常')
   output({'ok':True,'reasons':reasons,'cpu':details['rows'][:10], 'memory':sorted(details['rows'],key=lambda r:-r['rss'])[:10], 'note':details['note'],'timestamp':time.time()})
- if action=='overview':output(overview(user))
+ if action=='overview':output(overview(user,req.get('force') is True))
  if action=='smart':output(smart_disks())
- if action=='service_restart':output(restart_service(user,str(req.get('service',''))))
+ if action=='service_restart':
+  result=restart_service(user,str(req.get('service','')));invalidate('nascenter-'+user+'-services');output(result)
  if action=='drop_caches':output(drop_caches())
- if action=='clean_logs':output(clean_logs())
+ if action=='clean_logs':
+  result=clean_logs();invalidate('nascenter-logs');output(result)
  fail('未知操作')
 except subprocess.TimeoutExpired:fail('操作超时')
 except Exception as exc:fail('操作失败：'+str(exc))

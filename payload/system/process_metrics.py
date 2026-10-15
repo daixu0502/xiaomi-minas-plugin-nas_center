@@ -178,11 +178,11 @@ def total_ticks():
 
 
 def process_details(kind):
-    before = processes()
-    first = total_ticks()
-    time.sleep(.6)
+    before = processes() if kind != 'memory' else {}
+    first = total_ticks() if kind != 'memory' else 0
+    if kind != 'memory': time.sleep(.6)
     after = processes()
-    elapsed = max(1, total_ticks() - first)
+    elapsed = max(1, total_ticks() - first) if kind != 'memory' else 1
     total_mem = int(next(l.split()[1] for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemTotal:'))) * 1024
     rows = []
     for pid, row in after.items():

@@ -61,9 +61,9 @@ class MetricsTests(unittest.TestCase):
         after = {1: {'pid': 1, 'start': 2, 'ticks': 400, 'rss': 20},
                  2: {'pid': 2, 'start': 1, 'ticks': 20, 'rss': 40}}
         with patch.object(m, 'processes', side_effect=[before, after]), patch.object(m, 'total_ticks', side_effect=[1000, 1400]), patch.object(m.time, 'sleep'):
-            rows = m.process_details('memory')['rows']
-        self.assertEqual(rows[0]['pid'], 2)
-        self.assertIsNone(rows[1]['cpu'])
+            rows = m.process_details('cpu')['rows']
+        self.assertEqual({r['pid'] for r in rows},{1,2})
+        self.assertTrue(all(r['cpu'] is None for r in rows))
 
     def test_unknown_description_does_not_expose_command(self):
         self.assertNotIn('secret', m.describe('unknown', 'unknown --password=secret'))

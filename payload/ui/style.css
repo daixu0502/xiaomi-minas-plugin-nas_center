@@ -11,7 +11,7 @@
 [data-minas-plugin="nascenter"] h3{font-size: 16px;}
 [data-minas-plugin="nascenter"] p{color: var(--muted); font-size: 13px; line-height: 1.55;}
 [data-minas-plugin="nascenter"] .icon-button{display: grid; place-items: center; width: 43px; height: 43px; padding: 0px; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 14px; color: rgb(255, 255, 255); background: rgba(255, 255, 255, 0.1); font-size: 24px;}
-[data-minas-plugin="nascenter"] .status-pill{display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; color: rgb(89, 96, 110); background: rgb(233, 234, 240); font-size: 11px; font-weight: 800;}
+[data-minas-plugin="nascenter"] .status-pill{display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; color: rgb(89, 96, 110); background: rgb(233, 234, 240); font-size:13px; font-weight: 800;}
 [data-minas-plugin="nascenter"] .status-pill i{width: 7px; height: 7px; border-radius: 50%; background: currentcolor;}
 [data-minas-plugin="nascenter"] .status-pill.healthy{color: rgb(8, 119, 90); background: rgb(221, 247, 237);}
 [data-minas-plugin="nascenter"] .status-pill.warning{color: rgb(154, 101, 20); background: rgb(255, 240, 207);}
@@ -21,8 +21,8 @@
   0% { opacity: 0.4; transform: translateY(4px); }
 }
 [data-minas-plugin="nascenter"] .panel{border: 1px solid rgba(255, 255, 255, 0.82); background: var(--surface); box-shadow: var(--shadow);}
-[data-minas-plugin="nascenter"] .network-grid span{display: block; color: var(--muted); font-size: 11px;}
-[data-minas-plugin="nascenter"] .network-grid small{display: block; color: var(--muted); font-size: 10px;}
+[data-minas-plugin="nascenter"] .network-grid span{display: block; color: var(--muted); font-size:13px;}
+[data-minas-plugin="nascenter"] .network-grid small{display: block; color: var(--muted); font-size:13px;}
 [data-minas-plugin="nascenter"] .panel{margin-bottom: 12px; padding: 18px; border-radius: 20px;}
 [data-minas-plugin="nascenter"] .panel-heading, [data-minas-plugin="nascenter"] .section-heading{display: flex; align-items: center; justify-content: space-between; gap: 12px;}
 [data-minas-plugin="nascenter"] .panel-heading{margin-bottom: 14px;}
@@ -37,7 +37,7 @@
 [data-minas-plugin="nascenter"] .storage-row, [data-minas-plugin="nascenter"] .service-row{padding: 13px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);}
 [data-minas-plugin="nascenter"] .row-head{display: flex; align-items: center; justify-content: space-between; gap: 12px;}
 [data-minas-plugin="nascenter"] .row-head strong{font-size: 13px;}
-[data-minas-plugin="nascenter"] .row-head span{color: var(--muted); font-size: 11px;}
+[data-minas-plugin="nascenter"] .row-head span{color: var(--muted); font-size:13px;}
 [data-minas-plugin="nascenter"] .progress{height: 8px; margin-top: 10px; overflow: hidden; border-radius: 8px; background: var(--bg);}
 [data-minas-plugin="nascenter"] .progress i{display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, rgb(139, 92, 246), rgb(91, 67, 207));}
 [data-minas-plugin="nascenter"] .progress i.warn{background: var(--amber);}
@@ -46,23 +46,23 @@
 [data-minas-plugin="nascenter"] .service-name{display: flex; align-items: center; gap: 9px;}
 [data-minas-plugin="nascenter"] .dot{width: 8px; height: 8px; border-radius: 50%; background: var(--red);}
 [data-minas-plugin="nascenter"] .dot.active{background: var(--green); box-shadow: rgba(21, 150, 109, 0.12) 0px 0px 0px 4px;}
-[data-minas-plugin="nascenter"] .service-row button{padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--purple-dark); background: var(--purple-soft); font-size: 11px; font-weight: 800;}
-[data-minas-plugin="nascenter"] .secondary-button, [data-minas-plugin="nascenter"] .danger-button{min-height: 39px; padding: 9px 13px; border-radius: 11px; font-size: 12px; font-weight: 800;}
+[data-minas-plugin="nascenter"] .service-row button{padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--purple-dark); background: var(--purple-soft); font-size:13px; font-weight: 800;}
+[data-minas-plugin="nascenter"] .secondary-button, [data-minas-plugin="nascenter"] .danger-button{min-height: 39px; padding: 9px 13px; border-radius: 11px; font-size:13px; font-weight: 800;}
 [data-minas-plugin="nascenter"] .secondary-button{border: 1px solid var(--line); color: var(--purple-dark); background: var(--purple-soft);}
 [data-minas-plugin="nascenter"] .danger-button{border: 1px solid rgba(206, 77, 86, 0.28); color: var(--red); background: rgba(206, 77, 86, 0.1);}
 [data-minas-plugin="nascenter"] .disk-card{padding: 17px; border: 1px solid rgba(255, 255, 255, 0.84); border-radius: 19px; background: var(--surface); box-shadow: var(--shadow);}
 [data-minas-plugin="nascenter"] .disk-head{display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;}
 [data-minas-plugin="nascenter"] .disk-head h3{overflow-wrap: anywhere;}
 [data-minas-plugin="nascenter"] .disk-head p{margin-top: 4px;}
-[data-minas-plugin="nascenter"] .badge{padding: 5px 9px; border-radius: 999px; color: var(--green); background: rgba(21, 150, 109, 0.12); font-size: 10px; font-weight: 800;}
+[data-minas-plugin="nascenter"] .badge{padding: 5px 9px; border-radius: 999px; color: var(--green); background: rgba(21, 150, 109, 0.12); font-size:13px; font-weight: 800;}
 [data-minas-plugin="nascenter"] .badge.warning{color: var(--amber); background: rgba(214, 138, 21, 0.13);}
 [data-minas-plugin="nascenter"] .smart-grid{display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 14px;}
 [data-minas-plugin="nascenter"] .smart-item{padding: 10px; border-radius: 11px; background: var(--bg);}
-[data-minas-plugin="nascenter"] .smart-item span{display: block; color: var(--muted); font-size: 10px;}
+[data-minas-plugin="nascenter"] .smart-item span{display: block; color: var(--muted); font-size:13px;}
 [data-minas-plugin="nascenter"] .smart-item strong{display: block; margin-top: 5px; font-size: 13px;}
-[data-minas-plugin="nascenter"] .notice{margin-top: 12px; padding: 13px; border-radius: 14px; color: rgb(133, 101, 29); background: rgb(255, 242, 210); font-size: 11px; line-height: 1.6;}
+[data-minas-plugin="nascenter"] .notice{margin-top: 12px; padding: 13px; border-radius: 14px; color: rgb(133, 101, 29); background: rgb(255, 242, 210); font-size:13px; line-height: 1.6;}
 [data-minas-plugin="nascenter"] .tool-card{display: grid; grid-template-columns: auto minmax(0px, 1fr) auto; align-items: center; gap: 13px;}
-[data-minas-plugin="nascenter"] .tool-icon{display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; color: rgb(255, 255, 255); background: linear-gradient(145deg, rgb(139, 92, 246), rgb(79, 70, 199)); font-size: 11px; font-weight: 900;}
+[data-minas-plugin="nascenter"] .tool-icon{display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; color: rgb(255, 255, 255); background: linear-gradient(145deg, rgb(139, 92, 246), rgb(79, 70, 199)); font-size:13px; font-weight: 900;}
 [data-minas-plugin="nascenter"] .tool-icon.logs{background: linear-gradient(145deg, rgb(245, 158, 11), rgb(180, 83, 9));}
 [data-minas-plugin="nascenter"] .tool-help{margin-top: 8px;}
 [data-minas-plugin="nascenter"] .backdrop{position: fixed; inset: 0px; z-index: 30; background: rgba(14, 10, 37, 0.58); backdrop-filter: blur(4px);}

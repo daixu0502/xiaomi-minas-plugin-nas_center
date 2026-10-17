@@ -2,6 +2,7 @@
 import json, os, re, subprocess, sys, time
 from pathlib import Path
 sys.dont_write_bytecode = True
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'common'))
 from process_metrics import process_details, network_details, physical_space, docker_directory_usage, configure_cache
 from telemetry_cache import cached, invalidate
 
@@ -72,11 +73,22 @@ def disk_usage():
     item['sharedWith']='/data' if os.stat(mount).st_dev==os.stat('/data').st_dev else ''
   result.append(item)
  return result
+def demote_user(user):
+ import pwd
+ account=pwd.getpwnam(user)
+ if account.pw_uid==0:raise ValueError('插件控制必须使用普通 NAS 用户')
+ def lower():
+  os.initgroups(user,account.pw_gid);os.setgid(account.pw_gid);os.setuid(account.pw_uid)
+ return lower
+
+def plugin_environment(user,home):
+ return {'PATH':'/data/docker:/usr/sbin:/usr/bin:/sbin:/bin','LC_ALL':'C.UTF-8','PYTHONDONTWRITEBYTECODE':'1','HOME':'/home/'+user,'PLUG_USER':user,'PLUG_HOME_DIR':str(home),'PLUG_SRC_DIR':str((home/'src').resolve())}
+
 def plugin_status(user,name):
  control=Path('/home')/user/'plugin'/name/'scripts/control'
  if not control.is_file():return 'missing'
- env=os.environ.copy();env.update({'PLUG_USER':user,'PLUG_HOME_DIR':str(control.parent.parent),'PLUG_SRC_DIR':str((control.parent.parent/'src').resolve())})
- proc=subprocess.run([str(control),'status'],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=8,check=False)
+ env=plugin_environment(user,control.parent.parent)
+ proc=subprocess.run([str(control),'status'],env=env,preexec_fn=demote_user(user),stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=8,check=False)
  return 'active' if proc.returncode==0 else 'inactive'
 def service_list(user):
  result=[]
@@ -127,8 +139,8 @@ def restart_service(user,key):
  if 'plugin' in item:
   home=Path('/home')/user/'plugin'/item['plugin'];control=home/'scripts/control'
   if not control.is_file():fail(item['label']+' 未安装')
-  env=os.environ.copy();env.update({'PLUG_USER':user,'PLUG_HOME_DIR':str(home),'PLUG_SRC_DIR':str((home/'src').resolve())})
-  proc=subprocess.run([str(control),'restart'],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=45,check=False)
+  env=plugin_environment(user,home)
+  proc=subprocess.run([str(control),'restart'],env=env,preexec_fn=demote_user(user),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=45,check=False)
  else:proc=run(['systemctl','restart',*item['units']],45)
  if proc.returncode:fail(item['label']+' 重启失败')
  return {'ok':True,'service':key,'state':'active'}

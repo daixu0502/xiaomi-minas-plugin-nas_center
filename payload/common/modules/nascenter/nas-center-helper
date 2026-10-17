@@ -4,7 +4,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'common'))
 from process_metrics import process_details, network_details, physical_space, docker_directory_usage, configure_cache
-from telemetry_cache import cached, invalidate
+from telemetry_cache import cached, invalidate, configure
 
 MAX_REQUEST=65536
 SERVICES={
@@ -160,6 +160,7 @@ except Exception:fail('请求不是有效 JSON')
 user=str(req.get('pluginUser',''));caller=os.environ.get('SUDO_USER','')
 if not re.fullmatch(r'u[0-9]+',user) or caller not in (user,'root') or not Path('/home',user,'plugin','nascenter').is_dir():fail('调用用户无效')
 configure_cache(user)
+configure(user)
 action=req.get('action')
 try:
  if action=='processes':
